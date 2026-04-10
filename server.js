@@ -188,9 +188,9 @@ app.get("/api/config", (req, res) => {
 app.post("/api/status", (req, res) => {
     const { status } = req.body;
 
-    const allowed = ["online", "maintenance", "offline"];
+    const allowed = ["online", "offline", "maintenance"];
 
-    if (!allowed.includes(status)) {
+    if (!status || !allowed.includes(status)) {
         return res.json({
             success: false,
             message: "Status invalide"
@@ -204,13 +204,17 @@ app.post("/api/status", (req, res) => {
 
         fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
 
-        res.json({
+        return res.json({
             success: true,
-            status
+            status: data.status
         });
 
-    } catch {
-        res.json({ success: false });
+    } catch (err) {
+        console.error(err);
+        return res.json({
+            success: false,
+            message: "Erreur serveur"
+        });
     }
 });
 
