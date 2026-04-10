@@ -358,6 +358,15 @@ app.post("/api/deleteSanction", (req, res) => {
         res.json({ success: false });
     }
 });
+
+// =============================
+// 🏠 FORCE / → index.html
+// =============================
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Serveur lancé sur le port " + PORT);
   console.log("Serveur actif → https://crazy-fort.onrender.com/");
