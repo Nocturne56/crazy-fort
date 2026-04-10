@@ -108,9 +108,9 @@ button {
   </label>
 
   <select id="statusSelect">
-    <option value="en ligne">En ligne</option>
-    <option value="maintenance">Maintenance</option>
-    <option value="éteint">Éteint</option>
+    <option value="online">🟢 En ligne</option>
+    <option value="maintenance">🟡 Maintenance</option>
+    <option value="offline">🔴 Éteint</option>
   </select>
 
   <button onclick="updateStatus()">Appliquer le statut</button>
@@ -118,11 +118,11 @@ button {
   <div id="statusInfo"></div>
 
   <div class="link" onclick="goFondateurs()">
-    Géré les accès fondateur
+    Gérer les accès fondateur
   </div>
 
   <div class="link" onclick="goAdmin()">
-    Géré les accès administrateur
+    Gérer les accès administrateur
   </div>
 </div>
 
@@ -132,8 +132,13 @@ button {
 fetch("/api/config")
   .then(res => res.json())
   .then(data => {
-    document.getElementById("statusSelect").value = data.status;
-    document.getElementById("currentStatus").innerText = data.status;
+    const status = data.status || "offline";
+
+    document.getElementById("statusSelect").value = status;
+    document.getElementById("currentStatus").innerText = status;
+  })
+  .catch(() => {
+    document.getElementById("currentStatus").innerText = "erreur";
   });
 
 // ================= UPDATE STATUS =================
@@ -149,6 +154,13 @@ function updateStatus() {
   })
   .then(res => res.json())
   .then(data => {
+
+    if (!data.success) {
+      document.getElementById("statusInfo").innerText =
+        "❌ Erreur : " + (data.message || "inconnue");
+      return;
+    }
+
     document.getElementById("statusInfo").innerText =
       "✔ Statut mis à jour : " + data.status;
 
@@ -156,7 +168,7 @@ function updateStatus() {
   })
   .catch(() => {
     document.getElementById("statusInfo").innerText =
-      "❌ Erreur lors de la mise à jour";
+      "❌ Erreur serveur";
   });
 }
 
