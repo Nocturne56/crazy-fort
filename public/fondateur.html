@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Panel Fondateur</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b1a3a;
+  color: white;
+}
+
+/* TOP BAR */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  background: #111a2e;
+}
+
+.logout {
+  color: red;
+  cursor: pointer;
+}
+
+/* BOX */
+.box {
+  margin: 50px auto;
+  width: 500px;
+  background: #162447;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.title {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+/* LABEL STATUS */
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+/* SELECT */
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: #0b1a3a;
+  color: white;
+  border: 1px solid white;
+  border-radius: 5px;
+}
+
+/* BUTTON */
+button {
+  width: 100%;
+  margin-top: 15px;
+  padding: 10px;
+  background: #2f6fff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* LINKS */
+.link {
+  margin-top: 15px;
+  padding: 10px;
+  background: #1f2a48;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+#statusInfo {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* STATUS INLINE */
+#currentStatus {
+  font-weight: bold;
+  margin-left: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div>Vous êtes connecté en tant que fondateur</div>
+  <div class="logout" onclick="logout()">déconnexion</div>
+</div>
+
+<div class="box">
+  <div class="title">Dashboard fondateur</div>
+
+  <label>
+    Statut serveur :
+    <span id="currentStatus"></span>
+  </label>
+
+  <select id="statusSelect">
+    <option value="en ligne">En ligne</option>
+    <option value="maintenance">Maintenance</option>
+    <option value="éteint">Éteint</option>
+  </select>
+
+  <button onclick="updateStatus()">Appliquer le statut</button>
+
+  <div id="statusInfo"></div>
+
+  <div class="link" onclick="goFondateurs()">
+    Géré les accès fondateur
+  </div>
+
+  <div class="link" onclick="goAdmin()">
+    Géré les accès administrateur
+  </div>
+</div>
+
+<script>
+
+// ================= LOAD CONFIG =================
+fetch("/api/config")
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("statusSelect").value = data.status;
+    document.getElementById("currentStatus").innerText = data.status;
+  });
+
+// ================= UPDATE STATUS =================
+function updateStatus() {
+  const status = document.getElementById("statusSelect").value;
+
+  fetch("/api/status", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ status })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("statusInfo").innerText =
+      "✔ Statut mis à jour : " + data.status;
+
+    document.getElementById("currentStatus").innerText = data.status;
+  })
+  .catch(() => {
+    document.getElementById("statusInfo").innerText =
+      "❌ Erreur lors de la mise à jour";
+  });
+}
+
+// ================= ACTIONS =================
+function logout() {
+  window.location.href = "/";
+}
+
+function goFondateurs() {
+  window.location.href = "/acces_fondateur.html";
+}
+
+function goAdmin() {
+  window.location.href = "/acces_administrateur.html";
+}
+
+</script>
+
+</body>
+</html>

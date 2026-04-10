@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Connexion Admin</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b1a3a;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.box {
+  background: rgba(0,0,0,0.6);
+  padding: 30px;
+  border-radius: 10px;
+  width: 300px;
+}
+
+input {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border: none;
+  outline: none;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #2d6cdf;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1f4fb8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Connexion Admin</h2>
+
+  <form onsubmit="login(event)">
+    <input type="text" name="username" placeholder="Pseudo" required>
+    <input type="password" name="password" placeholder="Mot de passe" required>
+    <button type="submit">Connexion</button>
+  </form>
+</div>
+
+<script>
+async function login(event) {
+  event.preventDefault();
+
+  const username = document.querySelector("input[name='username']").value;
+  const password = document.querySelector("input[name='password']").value;
+
+  try {
+    const res = await fetch("/api/login/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("adminToken", data.token);
+      window.location.href = data.redirect;
+    } else {
+      alert(data.message || "Erreur connexion");
+    }
+
+  } catch (err) {
+    alert("Erreur serveur");
+  }
+}
+</script>
+
+</body>
+</html>
