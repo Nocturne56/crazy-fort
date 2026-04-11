@@ -109,6 +109,7 @@ body {
 .online { color: #00ff88; }
 .maintenance { color: #ffd000; }
 .offline { color: red; }
+.erreur { color: 8B0000; }
 
 /* SUB TEXT */
 .sub-info {
@@ -250,7 +251,7 @@ async function loadStatus() {
 	}
 	else if (data.status === "erreur") {
 	el.textContent = "❌ Une erreur c'est produite, aucune informations disponible.";
-	el.className = "maintenance";
+	el.className = "erreur";
 	}
 	else {
 	el.textContent = "🔴 Le serveur est hors ligne !";
