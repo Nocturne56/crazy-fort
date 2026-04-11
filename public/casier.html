@@ -2,168 +2,180 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Panel Admin - Casier</title>
+<title>Casier Joueurs</title>
 
 <style>
 body {
-    margin: 0;
-    font-family: Arial;
-    background: #0b1a3a;
-    color: white;
+  margin: 0;
+  font-family: Arial;
+  background: #0b1a3a;
+  color: white;
 }
 
-header {
-    padding: 20px;
-    background: #122a57;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  background: #111a2e;
 }
 
-.container {
-    padding: 20px;
+.back {
+  color: lightblue;
+  cursor: pointer;
 }
 
-.card {
-    background: #162f5f;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 10px;
-}
-
-button {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.delete {
-    background: red;
-    color: white;
-}
-
-.form {
-    margin-bottom: 20px;
-    background: #162f5f;
-    padding: 15px;
-    border-radius: 10px;
+.box {
+  margin: 50px auto;
+  width: 600px;
+  background: #162447;
+  padding: 20px;
+  border-radius: 10px;
 }
 
 input, select {
-    padding: 8px;
-    margin: 5px;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #0b1a3a;
+  color: white;
+  border: 1px solid white;
+  border-radius: 5px;
 }
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #2f6fff;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.card {
+  background: #1f2a48;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+}
+
+.warn { color: yellow; }
+.kick { color: orange; }
+.ban { color: red; }
 </style>
 </head>
 
 <body>
 
-<header>
-    <h2>Panel Admin - Casier</h2>
-</header>
+<div class="topbar">
+  <div class="back" onclick="back()">← retour admin</div>
+  <div>Casier joueurs</div>
+</div>
 
-<div class="container">
+<div class="box">
 
-    <!-- AJOUT SANCTION -->
-    <div class="form">
-        <h3>Ajouter une sanction</h3>
+<h3>⚠️ Ajouter sanction</h3>
 
-        <input id="username" placeholder="Pseudo">
-        <input id="reason" placeholder="Raison">
+<input id="player" placeholder="Pseudo joueur">
+<input id="reason" placeholder="Raison">
 
-        <select id="type">
-            <option value="warn">Warn</option>
-            <option value="kick">Kick</option>
-            <option value="ban">Ban</option>
-        </select>
+<select id="type">
+  <option value="warn">Avertisement</option>
+  <option value="kick">Kick</option>
+  <option value="ban">bannissement</option>
+</select>
 
-        <button onclick="addSanction()">Ajouter</button>
-    </div>
+<button onclick="addSanction()">Ajouter</button>
 
-    <!-- LISTE CASIER -->
-    <div id="casierList"></div>
+<hr>
+
+<h3>🔍 Recherche</h3>
+
+<input id="search" oninput="loadCasier()" placeholder="Pseudo joueur">
+
+<div id="list"></div>
 
 </div>
 
 <script>
-// =============================
-// 🔄 CHARGER CASIER
-// =============================
-async function loadCasier() {
-    const res = await fetch("/api/casier");
-    const data = await res.json();
 
-    const container = document.getElementById("casierList");
-    container.innerHTML = "";
-
-    data.forEach(item => {
-
-        const div = document.createElement("div");
-        div.className = "card";
-
-        div.innerHTML = `
-            <b>Pseudo :</b> ${item.username} <br>
-            <b>Type :</b> ${item.type} <br>
-            <b>Raison :</b> ${item.reason} <br>
-            <b>Date :</b> ${new Date(item.date).toLocaleString()} <br><br>
-
-            <button class="delete" onclick="deleteSanction('${item._id}')">
-                Supprimer
-            </button>
-        `;
-
-        container.appendChild(div);
-    });
+if (!localStorage.getItem("adminToken")) {
+  window.location.href = "/login_admin.html";
 }
 
-// =============================
-// ➕ AJOUT SANCTION
-// =============================
+function back() {
+  window.location.href = "/admin.html";
+}
+
 async function addSanction() {
-    const username = document.getElementById("username").value;
-    const reason = document.getElementById("reason").value;
-    const type = document.getElementById("type").value;
+  const username = document.getElementById("player").value;
+  const reason = document.getElementById("reason").value;
+  const type = document.getElementById("type").value;
 
-    const res = await fetch("/api/casier", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, reason, type })
-    });
+  await fetch("/api/casier", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, reason, type })
+  });
 
-    const data = await res.json();
-
-    if (data.success) {
-        alert("Sanction ajoutée !");
-        loadCasier();
-    } else {
-        alert("Erreur");
-    }
+  loadCasier();
 }
 
-// =============================
-// ❌ SUPPRESSION SANCTION
-// =============================
-async function deleteSanction(id) {
-    const res = await fetch("/api/deleteSanction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
-    });
+async function loadCasier() {
+  const res = await fetch("/api/casier");
+  const data = await res.json();
 
-    const data = await res.json();
+  const search = document.getElementById("search").value.toLowerCase();
+  const list = document.getElementById("list");
 
-    if (data.success) {
-        loadCasier();
-    } else {
-        alert("Erreur suppression");
-    }
+  list.innerHTML = "";
+
+  data.forEach((c, index) => {
+
+    if (!c.username.toLowerCase().includes(search)) return;
+
+    let cls = c.type;
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <b>${c.username}</b><br>
+      <span class="${cls}">[${c.type.toUpperCase()}]</span>
+      ${c.reason}<br>
+      <small>${new Date(c.date).toLocaleString()}</small><br><br>
+
+      <button onclick="deleteSanction(${index})" style="background:red;">
+        Supprimer
+      </button>
+    `;
+
+    list.appendChild(div);
+  });
 }
 
-// =============================
-// 🚀 INIT
-// =============================
+async function deleteSanction(index) {
+  if (!confirm("Supprimer cette sanction ?")) return;
+
+  const res = await fetch("/api/deleteSanction", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ index })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    loadCasier();
+  } else {
+    alert("Erreur suppression");
+  }
+}
+
 loadCasier();
+
 </script>
 
 </body>
