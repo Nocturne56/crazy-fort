@@ -248,6 +248,10 @@ async function loadStatus() {
 	el.textContent = "🟡 Maintenance en cours sur le serveur !";
 	el.className = "maintenance";
 	}
+	else if (data.status === "erreur") {
+	el.textContent = "❌ Une erreur c'est produite, aucune informations disponible.";
+	el.className = "maintenance";
+	}
 	else {
 	el.textContent = "🔴 Le serveur est hors ligne !";
 	el.className = "offline";
