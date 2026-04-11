@@ -1,9 +1,8 @@
 const express = require("express");
-const fs = require("fs");
+const mongoose = require("mongoose");
 const path = require("path");
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
 // 🔥 middleware
@@ -11,76 +10,88 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// 📁 fichiers
-const fondateurPath = path.join(__dirname, "public", "data", "fondateurs.json");
-const adminPath = path.join(__dirname, "public", "data", "admins.json");
-const configPath = path.join(__dirname, "public", "data", "config.json");
-const casierPath = path.join(__dirname, "public", "data", "casier.json");
+// =============================
+// 🔗 MONGODB
+// =============================
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => console.log("✅ MongoDB connecté"))
+.catch(err => console.error(err));
 
+// =============================
+// 📦 SCHEMAS (remplace tes JSON)
+// =============================
+const Fondateur = mongoose.model("Fondateur", {
+    username: String,
+    password: String
+});
+
+const Admin = mongoose.model("Admin", {
+    username: String,
+    password: String
+});
+
+const Casier = mongoose.model("Casier", {
+    username: String,
+    reason: String,
+    type: String,
+    date: String
+});
+
+const Config = mongoose.model("Config", {
+    status: String,
+    version: String
+});
 
 // =============================
 // 🔐 LOGIN FONDATEUR
 // =============================
-app.post("/api/login/fondateur", (req, res) => {
+app.post("/api/login/fondateur", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const data = JSON.parse(fs.readFileSync(fondateurPath));
-
-        const user = data.find(u => u.username === username && u.password === password);
+        const user = await Fondateur.findOne({ username, password });
 
         if (!user) {
-            return res.json({
-                success: false,
-                message: "Identifiants incorrects"
-            });
+            return res.json({ success: false, message: "Identifiants incorrects" });
         }
 
         const token = Math.random().toString(36).substring(2);
 
-        return res.json({
+        res.json({
             success: true,
             token,
             redirect: "/fondateur.html"
         });
 
     } catch {
-        return res.json({
-            success: false,
-            message: "Erreur serveur"
-        });
+        res.json({ success: false, message: "Erreur serveur" });
     }
 });
-
 
 // =============================
 // 👑 FONDATEURS
 // =============================
-
-// 📖 lire
-app.get("/api/fondateurs", (req, res) => {
+app.get("/api/fondateurs", async (req, res) => {
     try {
-        const data = JSON.parse(fs.readFileSync(fondateurPath));
+        const data = await Fondateur.find();
         res.json(data);
     } catch {
         res.json([]);
     }
 });
 
-// ➕ ajouter
-app.post("/api/fondateurs", (req, res) => {
+app.post("/api/fondateurs", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const data = JSON.parse(fs.readFileSync(fondateurPath));
-
-        if (data.find(f => f.username === username)) {
+        if (await Fondateur.findOne({ username })) {
             return res.json({ success: false });
         }
 
-        data.push({ username, password });
-
-        fs.writeFileSync(fondateurPath, JSON.stringify(data, null, 2));
+        await Fondateur.create({ username, password });
 
         res.json({ success: true });
 
@@ -89,20 +100,17 @@ app.post("/api/fondateurs", (req, res) => {
     }
 });
 
-// ❌ supprimer
-app.post("/api/deleteFondateur", (req, res) => {
+app.post("/api/deleteFondateur", async (req, res) => {
     const { username } = req.body;
 
     try {
-        let data = JSON.parse(fs.readFileSync(fondateurPath));
+        const count = await Fondateur.countDocuments();
 
-        if (data.length <= 1) {
+        if (count <= 1) {
             return res.json({ success: false });
         }
 
-        data = data.filter(f => f.username !== username);
-
-        fs.writeFileSync(fondateurPath, JSON.stringify(data, null, 2));
+        await Fondateur.deleteOne({ username });
 
         res.json({ success: true });
 
@@ -110,36 +118,28 @@ app.post("/api/deleteFondateur", (req, res) => {
         res.json({ success: false });
     }
 });
-
 
 // =============================
 // 🛡️ ADMINS
 // =============================
-
-// 📖 lire
-app.get("/api/admins", (req, res) => {
+app.get("/api/admins", async (req, res) => {
     try {
-        const data = JSON.parse(fs.readFileSync(adminPath));
+        const data = await Admin.find();
         res.json(data);
     } catch {
         res.json([]);
     }
 });
 
-// ➕ ajouter
-app.post("/api/admins", (req, res) => {
+app.post("/api/admins", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const data = JSON.parse(fs.readFileSync(adminPath));
-
-        if (data.find(a => a.username === username)) {
+        if (await Admin.findOne({ username })) {
             return res.json({ success: false });
         }
 
-        data.push({ username, password });
-
-        fs.writeFileSync(adminPath, JSON.stringify(data, null, 2));
+        await Admin.create({ username, password });
 
         res.json({ success: true });
 
@@ -148,213 +148,122 @@ app.post("/api/admins", (req, res) => {
     }
 });
 
-// ❌ supprimer
-app.post("/api/deleteAdmin", (req, res) => {
+app.post("/api/deleteAdmin", async (req, res) => {
     const { username } = req.body;
 
     try {
-        let data = JSON.parse(fs.readFileSync(adminPath));
-
-        data = data.filter(a => a.username !== username);
-
-        fs.writeFileSync(adminPath, JSON.stringify(data, null, 2));
-
+        await Admin.deleteOne({ username });
         res.json({ success: true });
-
     } catch {
         res.json({ success: false });
     }
 });
-
 
 // =============================
 // ⚙️ CONFIG / STATUS
 // =============================
-
-// 📖 lire config
-app.get("/api/config", (req, res) => {
+app.get("/api/config", async (req, res) => {
     try {
-        const data = JSON.parse(fs.readFileSync(configPath));
+        let data = await Config.findOne();
+
+        if (!data) {
+            data = await Config.create({
+                status: "offline",
+                version: "1.0"
+            });
+        }
+
         res.json(data);
+
     } catch {
-        res.json({
-            status: "offline",
-            version: "unknown"
-        });
+        res.json({ status: "offline", version: "unknown" });
     }
 });
 
-// ⚙️ changer status
-app.post("/api/status", (req, res) => {
+app.post("/api/status", async (req, res) => {
     const { status } = req.body;
 
     const allowed = ["online", "offline", "maintenance"];
 
     if (!status || !allowed.includes(status)) {
-        return res.json({
-            success: false,
-            message: "Status invalide"
-        });
+        return res.json({ success: false, message: "Status invalide" });
     }
 
     try {
-        const data = JSON.parse(fs.readFileSync(configPath));
+        let data = await Config.findOne();
 
-        data.status = status;
+        if (!data) {
+            data = await Config.create({
+                status,
+                version: "1.0"
+            });
+        } else {
+            data.status = status;
+            await data.save();
+        }
 
-        fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
-
-        return res.json({
-            success: true,
-            status: data.status
-        });
+        res.json({ success: true, status: data.status });
 
     } catch (err) {
         console.error(err);
-        return res.json({
-            success: false,
-            message: "Erreur serveur"
-        });
+        res.json({ success: false, message: "Erreur serveur" });
     }
 });
-
 
 // =============================
 // 🔐 LOGIN ADMIN
 // =============================
-app.post("/api/login/admin", (req, res) => {
+app.post("/api/login/admin", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const data = JSON.parse(fs.readFileSync(adminPath));
-
-        const user = data.find(u => u.username === username && u.password === password);
+        const user = await Admin.findOne({ username, password });
 
         if (!user) {
-            return res.json({
-                success: false,
-                message: "Identifiants incorrects"
-            });
+            return res.json({ success: false, message: "Identifiants incorrects" });
         }
 
         const token = Math.random().toString(36).substring(2);
 
-        return res.json({
+        res.json({
             success: true,
             token,
             redirect: "/admin.html"
         });
 
     } catch {
-        return res.json({
-            success: false,
-            message: "Erreur serveur"
-        });
+        res.json({ success: false, message: "Erreur serveur" });
     }
 });
 
 // =============================
 // 🔐 CASIER
 // =============================
-app.get("/api/casier", (req, res) => {
+app.get("/api/casier", async (req, res) => {
     try {
-        const data = JSON.parse(fs.readFileSync(casierPath));
+        const data = await Casier.find();
         res.json(data);
     } catch {
         res.json([]);
     }
 });
-app.post("/api/casier", (req, res) => {
+
+app.post("/api/casier", async (req, res) => {
     const { username, reason, type } = req.body;
 
     const allowed = ["warn", "kick", "ban"];
 
     if (!allowed.includes(type)) {
-        return res.json({
-            success: false,
-            message: "Type de sanction invalide"
-        });
+        return res.json({ success: false });
     }
 
     try {
-        const data = JSON.parse(fs.readFileSync(casierPath));
-
-        data.push({
+        await Casier.create({
             username,
             reason,
             type,
             date: new Date().toISOString()
         });
-
-        fs.writeFileSync(casierPath, JSON.stringify(data, null, 2));
-
-        return res.json({
-            success: true
-        });
-
-    } catch {
-        return res.json({
-            success: false,
-            message: "Erreur serveur"
-        });
-    }
-});
-// =============================
-// ➕ ajouter sanction
-// =============================
-app.post("/api/casier", (req, res) => {
-    const { username, reason, type } = req.body;
-
-    console.log("SANCTION REÇUE :", username, reason, type); // DEBUG
-
-    if (!username || !reason || !type) {
-        return res.json({ success: false, message: "Champs manquants" });
-    }
-
-    const allowed = ["warn", "kick", "ban"];
-    if (!allowed.includes(type)) {
-        return res.json({ success: false, message: "Type invalide" });
-    }
-
-    try {
-        const data = JSON.parse(fs.readFileSync(casierPath));
-
-        data.push({
-            username,
-            reason,
-            type,
-            date: new Date().toISOString()
-        });
-
-        fs.writeFileSync(casierPath, JSON.stringify(data, null, 2));
-
-        console.log("✔ Sanction ajoutée");
-
-        res.json({ success: true });
-
-    } catch (err) {
-        console.error("ERREUR CASIER :", err);
-        res.json({ success: false });
-    }
-});
-
-// =============================
-// ❌ supprimer sanction
-// =============================
-
-app.post("/api/deleteSanction", (req, res) => {
-    const { index } = req.body;
-
-    try {
-        let data = JSON.parse(fs.readFileSync(casierPath));
-
-        if (index < 0 || index >= data.length) {
-            return res.json({ success: false });
-        }
-
-        data.splice(index, 1);
-
-        fs.writeFileSync(casierPath, JSON.stringify(data, null, 2));
 
         res.json({ success: true });
 
@@ -363,15 +272,24 @@ app.post("/api/deleteSanction", (req, res) => {
     }
 });
 
+app.post("/api/deleteSanction", async (req, res) => {
+    const { id } = req.body;
+
+    try {
+        await Casier.findByIdAndDelete(id);
+        res.json({ success: true });
+    } catch {
+        res.json({ success: false });
+    }
+});
+
 // =============================
-// 🏠 FORCE / → index.html
+// 🏠 HOME
 // =============================
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("Serveur lancé sur le port " + PORT);
-  console.log("Serveur actif → https://crazy-fort.onrender.com/");
+    console.log("Serveur lancé sur le port " + PORT);
 });
