@@ -169,7 +169,7 @@ app.get("/api/config", async (req, res) => {
         if (!data) {
             data = await Config.create({
                 status: "offline",
-                version: "1.0"
+                version: "1.21.1"
             });
         }
 
@@ -183,7 +183,7 @@ app.get("/api/config", async (req, res) => {
 app.post("/api/status", async (req, res) => {
     const { status } = req.body;
 
-    const allowed = ["online", "offline", "maintenance"];
+    const allowed = ["online", "offline", "maintenance", "erreur"];
 
     if (!status || !allowed.includes(status)) {
         return res.json({ success: false, message: "Status invalide" });
